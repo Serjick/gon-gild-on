@@ -25,6 +25,7 @@ type FS struct {
 	formatter Formatter
 	filter    DataFilter
 	updallow  UpdateAllower
+	hooks     Hooks
 }
 
 // NewFS instantiate FS.
@@ -42,6 +43,7 @@ func NewFS(src fs.FS, opts ...FSOption) *FS {
 		formatter: NewJSONFormatter(),
 		filter:    NewDataFilterEmpty(),
 		updallow:  NewUpdateAllowerByFlag(),
+		hooks:     NewHooksDefault(),
 	}
 	for i := range opts {
 		newF = opts[i](newF)
@@ -54,11 +56,11 @@ func NewFS(src fs.FS, opts ...FSOption) *FS {
 // and write result back if `-update` flag defined. File will be auto created if doesn't exists.
 // Value of `actual` is the result of operation which being tested, and could be of type
 // golden.Data, json.RawMessage or any other type convertible to text.
-func (f *FS) RenderFile(t testingT, actual any) ([]byte, error) {
+func (f *FS) RenderFile(t TestingT, actual any) ([]byte, error) {
 	data := f.ensureData(actual)
 	file := f.locator(LocationVars{TestName: t.Name()})
 
-	expected, err := f.ensureFile(file, data)
+	expected, err := f.ensureFile(t, file, data)
 	if err != nil {
 		return nil, fmt.Errorf("ensure %q failure: %w", file, err)
 	}
@@ -101,22 +103,30 @@ func (*FS) ensureData(actual any) Data { //nolint:ireturn // arbitrary implement
 	}
 }
 
-func (f *FS) ensureFile(path string, actual Data) ([]byte, error) {
+func (f *FS) ensureFile(t TestingT, path string, actual Data) ([]byte, error) {
 	file, err := f.src.Open(path)
-	if f.updallow() || errors.Is(err, fs.ErrNotExist) {
-		return f.writeFile(filepath.Join(f.root, path), actual)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return f.writeFile(t, filepath.Join(f.root, path), nil, actual)
+		}
+
+		return nil, fmt.Errorf("source fille open failure: %w", err)
 	}
 	defer file.Close() //nolint:errcheck // file opened only for read, close error is not important
 
-	b, err := io.ReadAll(file)
+	current, err := io.ReadAll(file)
 	if err != nil {
 		return nil, fmt.Errorf("%q read failure: %w", path, err)
 	}
 
-	return b, nil
+	if f.updallow() {
+		return f.writeFile(t, filepath.Join(f.root, path), current, actual)
+	}
+
+	return current, nil
 }
 
-func (f *FS) writeFile(path string, actual Data) ([]byte, error) {
+func (f *FS) writeFile(t TestingT, path string, current []byte, actual Data) ([]byte, error) {
 	buf, err := actual.Format(f.formatter)
 	if err != nil {
 		return nil, fmt.Errorf("%T formating failure: %w", f.formatter, err)
@@ -131,7 +141,8 @@ func (f *FS) writeFile(path string, actual Data) ([]byte, error) {
 		return nil, fmt.Errorf("%q create failure: %w", dir, err)
 	}
 
-	if err := f.writer.File(path, buf, DefaultFilePerm); err != nil {
+	hookVars := PreSaveHookVars{Current: current}
+	if err := f.writer.File(path, f.hooks.preSave(t, buf, hookVars), DefaultFilePerm); err != nil {
 		return nil, fmt.Errorf("%q write failure: %w", path, err)
 	}
 

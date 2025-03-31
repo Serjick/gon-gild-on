@@ -45,6 +45,13 @@ func WithFSForceUpdate() FSOption {
 	})
 }
 
+// WithFSPreSaveHook is a immutable setter for pre golden file FS save hook.
+func WithFSPreSaveHook(h PreSaveHook) FSOption {
+	return FSOption(func(fs *FS) *FS {
+		return fs.WithPreSaveHook(h)
+	})
+}
+
 // WithRoot is a root directory immutable setter.
 func (f *FS) WithRoot(dir string) *FS {
 	newF := *f
@@ -92,6 +99,14 @@ func (f *FS) WithForceUpdate() *FS {
 	newF.updallow = func() bool {
 		return true
 	}
+
+	return &newF
+}
+
+// WithPreSaveHook is a immutable setter for pre golden file save hook.
+func (f *FS) WithPreSaveHook(h PreSaveHook) *FS {
+	newF := *f
+	newF.hooks.preSave = h
 
 	return &newF
 }

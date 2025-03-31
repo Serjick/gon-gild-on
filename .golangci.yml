@@ -3708,6 +3708,7 @@ linters:
       ignore-names:
         - err
         - tt
+        - to
       # Optional list of variable declarations that should be ignored completely.
       # Entries must be in one of the following forms (see below for examples):
       # - for variables, parameters, named return values, method receivers, or type parameters:
@@ -3718,6 +3719,8 @@ linters:
       ignore-decls:
         - ctx echo.Context
         - t testing.T
+        - t TestingT
+        - t golden.TestingT
         - f *foo.Bar
         - err error
         - i int

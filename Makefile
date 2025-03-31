@@ -6,6 +6,7 @@ default:
 
 test:
 	${VERBOSE} go test --race --vet= --failfast --count=1 --timeout=5m --test.run= --covermode=atomic --coverprofile=coverage.out --coverpkg=./... ./... -v
+	${VERBOSE} go test --fuzz ^Fuzz --fuzztime=10s ./golden/gildedsergigodiff -v
 
 coverage: test
 	${VERBOSE} go tool cover --func=coverage.out
