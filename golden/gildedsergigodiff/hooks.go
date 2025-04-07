@@ -14,14 +14,16 @@ import (
 
 // TextTemplateDiffMatchPatch is a text/template actions transferrer from one string to another.
 type TextTemplateDiffMatchPatch struct {
-	differ *diffmatchpatch.DiffMatchPatch
+	differ    *diffmatchpatch.DiffMatchPatch
+	tmplfuncs template.FuncMap
 }
 
 const diffTimeout = time.Minute
 
-func NewTextTemplateDiffMatchPatch(d *diffmatchpatch.DiffMatchPatch) *TextTemplateDiffMatchPatch {
+func NewTextTemplateDiffMatchPatch(d *diffmatchpatch.DiffMatchPatch, tf template.FuncMap) *TextTemplateDiffMatchPatch {
 	return &TextTemplateDiffMatchPatch{
-		differ: d,
+		differ:    d,
+		tmplfuncs: tf,
 	}
 }
 
@@ -32,7 +34,7 @@ func (p *TextTemplateDiffMatchPatch) Patch(prev, next string) (string, error) {
 		patched = strings.Replace(patched, pair.From(), pair.To(), 1)
 	}
 
-	if _, err := template.New("").Parse(patched); err != nil {
+	if _, err := template.New("").Funcs(p.tmplfuncs).Parse(patched); err != nil {
 		return "", fmt.Errorf("template parse failure: %w", err)
 	}
 
@@ -58,7 +60,7 @@ func NewTextTemplateDiffMatchPatchPreSaveHook() golden.PreSaveHook {
 			return data
 		}
 
-		patcher := NewTextTemplateDiffMatchPatch(diffmatchpatch.New())
+		patcher := NewTextTemplateDiffMatchPatch(diffmatchpatch.New(), vars.TmplFuncs)
 
 		patched, err := patcher.Patch(string(vars.Current), string(data))
 		if err != nil {

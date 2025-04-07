@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"testing"
+	"text/template"
 	"time"
 
 	"github.com/sergi/go-diff/diffmatchpatch"
@@ -16,6 +17,7 @@ func TestTextTemplateDiffMatchPatch_Patch(t *testing.T) {
 
 	type fields struct {
 		differ *diffmatchpatch.DiffMatchPatch
+		tf     template.FuncMap
 	}
 	type args struct {
 		prev string
@@ -44,7 +46,7 @@ func TestTextTemplateDiffMatchPatch_Patch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			p := gildedsergigodiff.NewTextTemplateDiffMatchPatch(tt.fields.differ)
+			p := gildedsergigodiff.NewTextTemplateDiffMatchPatch(tt.fields.differ, tt.fields.tf)
 			got, err := p.Patch(tt.args.prev, tt.args.next)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("TextTemplateDiffMatchPatch.Patch() error = %v, wantErr %v", err, tt.wantErr)
@@ -83,7 +85,7 @@ func FuzzTextTemplateDiffMatchPatch_Patch_time(f *testing.F) {
 
 		differ := diffmatchpatch.New()
 
-		p := gildedsergigodiff.NewTextTemplateDiffMatchPatch(differ)
+		p := gildedsergigodiff.NewTextTemplateDiffMatchPatch(differ, nil)
 		got, err := p.Patch(TimeFuzzPrev, fmt.Sprintf(TimeFuzzNext, ts))
 		if err != nil {
 			t.Errorf("TextTemplateDiffMatchPatch.Patch() error = %v", err)

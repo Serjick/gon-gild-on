@@ -52,6 +52,13 @@ func WithFSPreSaveHook(h PreSaveHook) FSOption {
 	})
 }
 
+// WithFSTmplFuncFactory is a golden files text/template functions factories immutable merger for FS.
+func WithFSTmplFuncFactory(tf TmplFuncFactory) FSOption {
+	return FSOption(func(fs *FS) *FS {
+		return fs.WithTmplFuncFactory(tf)
+	})
+}
+
 // WithRoot is a root directory immutable setter.
 func (f *FS) WithRoot(dir string) *FS {
 	newF := *f
@@ -99,6 +106,16 @@ func (f *FS) WithForceUpdate() *FS {
 	newF.updallow = func() bool {
 		return true
 	}
+
+	return &newF
+}
+
+// WithTmplFuncFactory is a immutable merger of text/template functions collection factories.
+func (f *FS) WithTmplFuncFactory(tf TmplFuncFactory) *FS {
+	newF := *f
+	newF.tmplfuncs = make([]TmplFuncFactory, len(f.tmplfuncs))
+	copy(newF.tmplfuncs, f.tmplfuncs)
+	newF.tmplfuncs = append(newF.tmplfuncs, tf)
 
 	return &newF
 }

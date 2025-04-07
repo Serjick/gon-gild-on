@@ -3921,6 +3921,7 @@ linters:
           - funlen
           - exhaustruct
           - wsl
+          - gochecknoinits
       - path: _test\.go
         text: "^(nested-structs|add-constant|enforce-map-style|function-length|file-length-limit|cognitive-complexity|comments-density): "
         linters:

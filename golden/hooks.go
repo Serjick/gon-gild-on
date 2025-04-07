@@ -1,9 +1,14 @@
 package golden
 
+import (
+	"html/template"
+)
+
 type (
 	PreSaveHookVars struct {
 		// Current is a present content of golden file.
-		Current []byte
+		Current   []byte
+		TmplFuncs template.FuncMap
 	}
 
 	// PreSaveHook is a hook calling before golden file write.

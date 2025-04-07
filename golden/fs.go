@@ -3,10 +3,9 @@ package golden
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -25,26 +24,27 @@ type FS struct {
 	formatter Formatter
 	filter    DataFilter
 	updallow  UpdateAllower
+	tmplfuncs []TmplFuncFactory
 	hooks     Hooks
 }
 
 // NewFS instantiate FS.
 func NewFS(src fs.FS, opts ...FSOption) *FS {
-	var root string
-	if _, caller, _, ok := runtime.Caller(1); ok {
-		root = filepath.Dir(caller)
-	}
-
 	newF := &FS{
 		src:       src,
-		root:      root,
+		root:      "",
 		writer:    Writer{Dir: os.MkdirAll, File: os.WriteFile},
 		locator:   NewLocatorDefault(),
 		formatter: NewJSONFormatter(),
 		filter:    NewDataFilterEmpty(),
 		updallow:  NewUpdateAllowerByFlag(),
+		tmplfuncs: nil,
 		hooks:     NewHooksDefault(),
 	}
+	if _, caller, _, ok := runtime.Caller(1); ok {
+		newF.root = filepath.Dir(caller)
+	}
+
 	for i := range opts {
 		newF = opts[i](newF)
 	}
@@ -70,7 +70,7 @@ func (f *FS) RenderFile(t TestingT, actual any) ([]byte, error) {
 		return nil, fmt.Errorf("template payload failure: %w", err)
 	}
 
-	b, err := f.renderTmpl(expected, map[string]any{"Actual": vars})
+	b, err := f.renderTmpl(expected, f.tmplFuncs(t), map[string]any{"Actual": vars})
 	if err != nil {
 		return nil, fmt.Errorf("template render failure: %w", err)
 	}
@@ -78,8 +78,8 @@ func (f *FS) RenderFile(t TestingT, actual any) ([]byte, error) {
 	return b, nil
 }
 
-func (*FS) renderTmpl(tmpl []byte, payload any) ([]byte, error) {
-	t, err := template.New("").Funcs(nil).Parse(string(tmpl))
+func (*FS) renderTmpl(tmpl []byte, funcs template.FuncMap, payload any) ([]byte, error) {
+	t, err := template.New("").Funcs(funcs).Parse(string(tmpl))
 	if err != nil {
 		return nil, fmt.Errorf("template parse failure: %w", err)
 	}
@@ -103,48 +103,11 @@ func (*FS) ensureData(actual any) Data { //nolint:ireturn // arbitrary implement
 	}
 }
 
-func (f *FS) ensureFile(t TestingT, path string, actual Data) ([]byte, error) {
-	file, err := f.src.Open(path)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return f.writeFile(t, filepath.Join(f.root, path), nil, actual)
-		}
-
-		return nil, fmt.Errorf("source fille open failure: %w", err)
-	}
-	defer file.Close() //nolint:errcheck // file opened only for read, close error is not important
-
-	current, err := io.ReadAll(file)
-	if err != nil {
-		return nil, fmt.Errorf("%q read failure: %w", path, err)
+func (f *FS) tmplFuncs(t TestingT) template.FuncMap {
+	m := make(template.FuncMap)
+	for _, tf := range f.tmplfuncs {
+		maps.Copy(m, tf(t, TmplFuncFactoryVars{}))
 	}
 
-	if f.updallow() {
-		return f.writeFile(t, filepath.Join(f.root, path), current, actual)
-	}
-
-	return current, nil
-}
-
-func (f *FS) writeFile(t TestingT, path string, current []byte, actual Data) ([]byte, error) {
-	buf, err := actual.Format(f.formatter)
-	if err != nil {
-		return nil, fmt.Errorf("%T formating failure: %w", f.formatter, err)
-	}
-
-	if !actual.Valid(f.filter) { // skip auto creation of empty file
-		return buf, nil
-	}
-
-	dir := filepath.Dir(path)
-	if err := f.writer.Dir(dir, DefaultDirPerm); err != nil {
-		return nil, fmt.Errorf("%q create failure: %w", dir, err)
-	}
-
-	hookVars := PreSaveHookVars{Current: current}
-	if err := f.writer.File(path, f.hooks.preSave(t, buf, hookVars), DefaultFilePerm); err != nil {
-		return nil, fmt.Errorf("%q write failure: %w", path, err)
-	}
-
-	return buf, nil
+	return m
 }
