@@ -7,7 +7,8 @@ import (
 type (
 	PreSaveHookVars struct {
 		// Current is a present content of golden file.
-		Current   []byte
+		Current []byte
+		// TmplFuncs is a composition of functions from all TmplFuncFactory.
 		TmplFuncs template.FuncMap
 	}
 

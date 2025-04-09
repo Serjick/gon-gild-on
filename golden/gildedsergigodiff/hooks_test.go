@@ -31,6 +31,28 @@ func TestTextTemplateDiffMatchPatch_Patch(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name: "FieldLodge",
+			fields: fields{
+				differ: diffmatchpatch.New(),
+			},
+			args: args{
+				prev: FieldLodgePrev,
+				next: FieldLodgeNext,
+			},
+			want: FieldLodgeWant,
+		},
+		{
+			name: "FuncMapKey",
+			fields: fields{
+				differ: diffmatchpatch.New(),
+			},
+			args: args{
+				prev: FuncMapKeyPrev,
+				next: FuncMapKeyNext,
+			},
+			want: FuncMapKeyWant,
+		},
+		{
 			name: "TimeInMap",
 			fields: fields{
 				differ: diffmatchpatch.New(),
