@@ -651,7 +651,7 @@ linters:
       #   flagDeref, flagName, ifElseChain, mapKey, newDeref, offBy1, regexpMust, singleCaseSwitch, sloppyLen,
       #   sloppyTypeAssert, switchTrue, typeSwitchVar, underef, unlambda, unslice, valSwap, wrapperFunc
       # To see which checks are enabled run `GL_DEBUG=gocritic golangci-lint run --enable=gocritic`.
-      enabled-checks:
+      enabled-checks: []
         # Detects suspicious append result assignments.
         # https://go-critic.com/overview.html#appendassign
         # - appendAssign
@@ -1266,7 +1266,7 @@ linters:
       # By default, if a path is relative, it is relative to the directory where the golangci-lint command is executed.
       # The placeholder '${base-path}' is substituted with a path relative to the mode defined with `run.relative-path-mode`.
       # Default: ""
-      template-path: /path/to/my/template.tmpl
+      # template-path: /path/to/my/template.tmpl
 
     gomoddirectives:
       # Allow local `replace` directives.
@@ -1553,7 +1553,7 @@ linters:
       # ).
       # Run `GL_DEBUG=govet golangci-lint run --enable=govet` to see default, all available analyzers, and enabled analyzers.
       # Default: []
-      enable:
+      enable: []
         # Check for missing values after append.
         # - appends
         # Report mismatches between assembly files and Go declarations.
@@ -3393,7 +3393,7 @@ linters:
               json: snake
               xml: pascal
             # Default: empty or the same as the default/root configuration.
-            extended-rules:
+            extended-rules: {}
             # Same options as the base `extended-rules`.
             # Default: false (WARNING: it doesn't follow the default/root configuration)
             use-field-name: true
@@ -3406,11 +3406,11 @@ linters:
             # Default: false
             ignore: true
 
-    tenv:
+    # tenv:
       # The option `all` will run against whole test files (`_test.go`) regardless of method/function signatures.
       # Otherwise, only methods that take `*testing.T`, `*testing.B`, and `testing.TB` as arguments are checked.
       # Default: false
-      all: false
+      # all: false
 
     testifylint:
       # Enable all checkers (https://github.com/Antonboom/testifylint#checkers).

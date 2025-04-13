@@ -12,6 +12,7 @@ coverage: test
 	${VERBOSE} go tool cover --func=coverage.out
 
 lint: golangci-lint
+	${VERBOSE} ${GOLANGCI_LINT} config verify
 	${VERBOSE} ${GOLANGCI_LINT} run --timeout=2m ./... -v
 
 .PHONY: test coverage lint
