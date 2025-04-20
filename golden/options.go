@@ -3,6 +3,13 @@ package golden
 // FSOption is a single setting setter for FS in a immutable way.
 type FSOption func(*FS) *FS
 
+// WithFSSource is a golden files Source immutable setter for FS.
+func WithFSSource(src Source) FSOption {
+	return FSOption(func(fs *FS) *FS {
+		return fs.WithSource(src)
+	})
+}
+
 // WithFSRoot is a root directory immutable setter for FS writes.
 func WithFSRoot(dir string) FSOption {
 	return FSOption(func(fs *FS) *FS {
@@ -57,6 +64,14 @@ func WithFSTmplFuncFactory(tf TmplFuncFactory) FSOption {
 	return FSOption(func(fs *FS) *FS {
 		return fs.WithTmplFuncFactory(tf)
 	})
+}
+
+// WithSource is a golden files Source immutable setter.
+func (f *FS) WithSource(src Source) *FS {
+	newF := *f
+	newF.src = src
+
+	return &newF
 }
 
 // WithRoot is a root directory immutable setter.

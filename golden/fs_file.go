@@ -6,18 +6,19 @@ import (
 	"io"
 	"io/fs"
 	"path/filepath"
+	"reflect"
 )
 
 // ensureFile reads golden file if it is exists, creates othewise,
 // and overwrites if allowed by UpdateAllower.
-func (f *FS) ensureFile(t TestingT, path string, actual Data) ([]byte, error) {
-	file, err := f.src.Open(path)
+func (f *FS) ensureFile(t TestingT, root, path string, actual Data) ([]byte, error) {
+	file, err := f.src(SourceVars{RenderCallerDir: root}).Open(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return f.writeFile(t, filepath.Join(f.root, path), nil, actual)
+			return f.writeFile(t, filepath.Join(f.fileWriteDir(root), path), nil, actual)
 		}
 
-		return nil, fmt.Errorf("source fille open failure: %w", err)
+		return nil, fmt.Errorf("source file open failure: %w", err)
 	}
 	defer file.Close() //nolint:errcheck // file opened only for read, close error is not important
 
@@ -27,7 +28,7 @@ func (f *FS) ensureFile(t TestingT, path string, actual Data) ([]byte, error) {
 	}
 
 	if f.updallow() {
-		return f.writeFile(t, filepath.Join(f.root, path), current, actual)
+		return f.writeFile(t, filepath.Join(f.fileWriteDir(root), path), current, actual)
 	}
 
 	return current, nil
@@ -55,4 +56,17 @@ func (f *FS) writeFile(t TestingT, path string, current []byte, actual Data) ([]
 	}
 
 	return buf, nil
+}
+
+func (f *FS) fileWriteDir(root string) string {
+	if f.root != "" {
+		return f.root
+	}
+
+	src := f.src(SourceVars{RenderCallerDir: root})
+	if v := reflect.ValueOf(src); v.Kind() == reflect.String { // NOTE: it is likely os.dirFS
+		return v.String()
+	}
+
+	return root
 }

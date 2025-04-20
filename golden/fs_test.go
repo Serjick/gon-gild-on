@@ -23,9 +23,11 @@ func ExampleFS_RenderFile_embedfs() {
 	}
 	*/
 	path := filepath.Join("testdata", "golden", "example.tmpl")
-	f := golden.NewFS(goldens, golden.WithFSLocator(func(golden.LocationVars) string {
-		return path
-	}))
+	f := golden.NewFS(golden.WithFSSource(golden.NewSourceFS(goldens)),
+		golden.WithFSLocator(func(golden.LocationVars) string {
+			return path
+		}),
+	)
 	b, err := f.RenderFile(new(testing.T), map[string]string{"key": "value"})
 	fmt.Printf("%s", b)
 	fmt.Print(err)
@@ -38,6 +40,8 @@ func ExampleFS_RenderFile_embedfs() {
 
 func TestFS_RenderFile(t *testing.T) {
 	t.Parallel()
+
+	tmpDir := t.TempDir()
 
 	type fields struct {
 		src  fs.FS
@@ -119,16 +123,26 @@ func TestFS_RenderFile(t *testing.T) {
 			wantF:   filepath.Join("testdata", "golden", "TestFS_RenderFile", "Updated", "golden.tmpl"),
 			wantErr: false,
 		},
+		{
+			name: "Embedded",
+			fields: fields{
+				src:  goldens,
+				opts: []golden.FSOption{golden.WithFSRoot(tmpDir)},
+			},
+			args: args{
+				actual: "-",
+			},
+			want:    []byte(`"-"` + "\n"),
+			wantF:   filepath.Join(tmpDir, "testdata", "golden", "TestFS_RenderFile", "Embedded", "golden.tmpl"),
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			opts := tt.fields.opts
-			if fmt.Sprintf("%T", tt.fields.src) == "os.dirFS" {
-				opts = append([]golden.FSOption{golden.WithFSRoot(fmt.Sprintf("%s", tt.fields.src))}, opts...)
-			}
-			f := golden.NewFS(tt.fields.src, opts...)
+			opts := append([]golden.FSOption{golden.WithFSSource(golden.NewSourceFS(tt.fields.src))}, tt.fields.opts...)
+			f := golden.NewFS(opts...)
 			got, err := f.RenderFile(t, tt.args.actual)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FS.RenderFile() error = %v, wantErr %v", err, tt.wantErr)
@@ -141,7 +155,11 @@ func TestFS_RenderFile(t *testing.T) {
 				return
 			}
 
-			path := filepath.Join(fmt.Sprintf("%s", tt.fields.src), tt.wantF)
+			path := tt.wantF
+			if filepath.IsLocal(path) {
+				path = filepath.Join(fmt.Sprintf("%s", tt.fields.src), path)
+			}
+
 			gotF, err := os.ReadFile(path)
 			if err != nil {
 				t.Errorf("%q read failed: %s", path, err.Error())

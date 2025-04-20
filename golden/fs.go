@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
@@ -16,8 +15,7 @@ import (
 // io/fs.FS could be used as source (e.g. os.DirFS or embed.FS). Writes are
 // performed over host filesystem if Writer option is not used.
 type FS struct {
-	src fs.FS
-
+	src       Source
 	root      string
 	writer    Writer
 	locator   Locator
@@ -29,9 +27,18 @@ type FS struct {
 }
 
 // NewFS instantiate FS.
-func NewFS(src fs.FS, opts ...FSOption) *FS {
-	newF := &FS{
-		src:       src,
+func NewFS(opts ...FSOption) *FS {
+	newF := newFSDefault()
+	for i := range opts {
+		newF = opts[i](newF)
+	}
+
+	return newF
+}
+
+func newFSDefault() *FS {
+	return &FS{
+		src:       NewSourceCaller(),
 		root:      "",
 		writer:    Writer{Dir: os.MkdirAll, File: os.WriteFile},
 		locator:   NewLocatorDefault(),
@@ -41,15 +48,6 @@ func NewFS(src fs.FS, opts ...FSOption) *FS {
 		tmplfuncs: nil,
 		hooks:     NewHooksDefault(),
 	}
-	if _, caller, _, ok := runtime.Caller(1); ok {
-		newF.root = filepath.Dir(caller)
-	}
-
-	for i := range opts {
-		newF = opts[i](newF)
-	}
-
-	return newF
 }
 
 // RenderFile locate and read golden file, render it as text/template with actual data,
@@ -57,20 +55,20 @@ func NewFS(src fs.FS, opts ...FSOption) *FS {
 // Value of `actual` is the result of operation which being tested, and could be of type
 // golden.Data, json.RawMessage or any other type convertible to text.
 func (f *FS) RenderFile(t TestingT, actual any) ([]byte, error) {
+	var caller string
+	if _, c, _, ok := runtime.Caller(1); ok {
+		caller = filepath.Dir(c)
+	}
+
 	data := f.ensureData(actual)
 	file := f.locator(LocationVars{TestName: t.Name()})
 
-	expected, err := f.ensureFile(t, file, data)
+	expected, err := f.ensureFile(t, caller, file, data)
 	if err != nil {
 		return nil, fmt.Errorf("ensure %q failure: %w", file, err)
 	}
 
-	vars, err := data.TmplVars()
-	if err != nil {
-		return nil, fmt.Errorf("template payload failure: %w", err)
-	}
-
-	b, err := f.renderTmpl(expected, f.tmplFuncs(t), map[string]any{"Actual": vars})
+	b, err := f.renderTmpl(expected, f.tmplFuncs(t), data)
 	if err != nil {
 		return nil, fmt.Errorf("template render failure: %w", err)
 	}
@@ -78,14 +76,19 @@ func (f *FS) RenderFile(t TestingT, actual any) ([]byte, error) {
 	return b, nil
 }
 
-func (*FS) renderTmpl(tmpl []byte, funcs template.FuncMap, payload any) ([]byte, error) {
+func (*FS) renderTmpl(tmpl []byte, funcs template.FuncMap, actual Data) ([]byte, error) {
+	vars, err := actual.TmplVars()
+	if err != nil {
+		return nil, fmt.Errorf("template payload failure: %w", err)
+	}
+
 	t, err := template.New("").Funcs(funcs).Parse(string(tmpl))
 	if err != nil {
 		return nil, fmt.Errorf("template parse failure: %w", err)
 	}
 
 	var b bytes.Buffer
-	if err := t.Execute(&b, payload); err != nil {
+	if err := t.Execute(&b, map[string]any{"Actual": vars}); err != nil {
 		return nil, fmt.Errorf("template execute failure: %w", err)
 	}
 
