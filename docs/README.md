@@ -182,7 +182,7 @@ With this you can use assertions in your templates:
 "created_at": "{{ testifyTimeInTestcaseRange .Actual.created_at }}"
 ```
 
-### Smart Template Diffing
+#### Smart Template Diffing
 
 ```go
 import "github.com/Serjick/gon-gild-on/golden/gildedsergigodiff"

@@ -7,6 +7,18 @@ import (
 	"github.com/Serjick/gon-gild-on/golden"
 )
 
+func ExampleFnFormatter_Bytes() {
+	b, err := golden.NewFmtFormatter().Bytes(`title = "TOML"` + "\n\n" + "[example]" + "\n" + `name = "fmt"`)
+	fmt.Printf("%s", b)
+	fmt.Print(err)
+	// Output:
+	// title = "TOML"
+	//
+	// [example]
+	// name = "fmt"
+	// <nil>
+}
+
 func ExampleJSONFormatter_Bytes_nil() {
 	b, err := golden.NewJSONFormatter().Bytes(nil)
 	fmt.Printf("%s", b)

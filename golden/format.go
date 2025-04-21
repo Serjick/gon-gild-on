@@ -12,10 +12,24 @@ type Formatter interface {
 	Bytes(any) ([]byte, error)
 }
 
-// JSONFormatter is implementation of Formatter based on encoding/json.
-type JSONFormatter struct {
-	prefix string
-	indent string
+type (
+	// FnFormatter is implementation of Formatter compartible with stdlib fmt package.
+	FnFormatter func(...any) string
+
+	// JSONFormatter is implementation of Formatter based on encoding/json.
+	JSONFormatter struct {
+		prefix string
+		indent string
+	}
+)
+
+var (
+	_ Formatter = FnFormatter(nil)
+	_ Formatter = (*JSONFormatter)(nil)
+)
+
+func NewFmtFormatter() FnFormatter {
+	return fmt.Sprintln
 }
 
 func NewJSONFormatter() *JSONFormatter {
@@ -23,6 +37,11 @@ func NewJSONFormatter() *JSONFormatter {
 		prefix: "",
 		indent: "    ",
 	}
+}
+
+// Bytes dump any data as is.
+func (f FnFormatter) Bytes(data any) ([]byte, error) {
+	return []byte(f(data)), nil
 }
 
 // Bytes dump any data as json.
