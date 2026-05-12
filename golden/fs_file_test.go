@@ -1,6 +1,7 @@
 package golden_test
 
 import (
+	"bytes"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -24,8 +25,8 @@ func ExampleFS_RenderFile_embedfs() {
 	*/
 	path := filepath.Join("testdata", "golden", "example.tmpl")
 	f := golden.NewFS(golden.WithFSSource(golden.NewSourceFS(goldens)),
-		golden.WithFSLocator(func(golden.LocationVars) string {
-			return path
+		golden.WithFSLocator(func(golden.LocationVars) fmt.Stringer {
+			return bytes.NewBufferString(path)
 		}),
 	)
 	b, err := f.RenderFile(new(testing.T), map[string]string{"key": "value"})
@@ -67,7 +68,7 @@ func TestFS_RenderFile(t *testing.T) {
 				actual: true,
 			},
 			want:    []byte("true\n"),
-			wantF:   filepath.Join("testdata", "golden", "TestFS_RenderFile", "AutoCreate", "golden.tmpl"),
+			wantF:   filepath.Join("testdata", "golden", t.Name(), "AutoCreate", "golden.tmpl"),
 			wantErr: false,
 		},
 		{
@@ -103,13 +104,13 @@ func TestFS_RenderFile(t *testing.T) {
 			fields: fields{
 				src: func() fs.FS {
 					dir := t.TempDir()
-					path := filepath.Join(dir, "testdata", "golden", "TestFS_RenderFile", "Updated")
+					path := filepath.Join(dir, "testdata", "golden", t.Name(), "Updated")
 					if err := os.MkdirAll(path, golden.DefaultDirPerm); err != nil {
-						t.Errorf("%q fixture write failed: %s", path, err)
+						t.Fatalf("%q fixture write failed: %s", path, err)
 					}
 					file := filepath.Join(path, "golden.tmpl")
 					if err := os.WriteFile(file, []byte("1\n"), golden.DefaultFilePerm); err != nil {
-						t.Errorf("%q fixture write failed: %s", file, err)
+						t.Fatalf("%q fixture write failed: %s", file, err)
 					}
 
 					return os.DirFS(dir)
@@ -120,7 +121,7 @@ func TestFS_RenderFile(t *testing.T) {
 				actual: 2,
 			},
 			want:    []byte("2\n"),
-			wantF:   filepath.Join("testdata", "golden", "TestFS_RenderFile", "Updated", "golden.tmpl"),
+			wantF:   filepath.Join("testdata", "golden", t.Name(), "Updated", "golden.tmpl"),
 			wantErr: false,
 		},
 		{
@@ -133,7 +134,7 @@ func TestFS_RenderFile(t *testing.T) {
 				actual: "-",
 			},
 			want:    []byte(`"-"` + "\n"),
-			wantF:   filepath.Join(tmpDir, "testdata", "golden", "TestFS_RenderFile", "Embedded", "golden.tmpl"),
+			wantF:   filepath.Join(tmpDir, "testdata", "golden", t.Name(), "Embedded", "golden.tmpl"),
 			wantErr: false,
 		},
 	}
@@ -145,8 +146,7 @@ func TestFS_RenderFile(t *testing.T) {
 			f := golden.NewFS(opts...)
 			got, err := f.RenderFile(t, tt.args.actual)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("FS.RenderFile() error = %v, wantErr %v", err, tt.wantErr)
-				return
+				t.Fatalf("FS.RenderFile() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("FS.RenderFile() = %s, want %s", got, tt.want)
@@ -162,8 +162,7 @@ func TestFS_RenderFile(t *testing.T) {
 
 			gotF, err := os.ReadFile(path)
 			if err != nil {
-				t.Errorf("%q read failed: %s", path, err.Error())
-				return
+				t.Fatalf("%q read failed: %s", path, err.Error())
 			}
 			if !reflect.DeepEqual(gotF, tt.want) {
 				t.Errorf("FS.writeFile() = %s, want %s", gotF, tt.want)

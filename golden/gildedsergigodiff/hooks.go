@@ -12,15 +12,15 @@ import (
 	"github.com/Serjick/gon-gild-on/golden/gildedsergigodiff/internal"
 )
 
+const diffTimeout = time.Minute
+
 // TextTemplateDiffMatchPatch is a text/template actions transferrer from one string to another.
 type TextTemplateDiffMatchPatch struct {
 	differ    *diffmatchpatch.DiffMatchPatch
 	tmplfuncs template.FuncMap
 }
 
-const diffTimeout = time.Minute
-
-// NewTextTemplateDiffMatchPatch is a instantiator of [TextTemplateDiffMatchPatch].
+// NewTextTemplateDiffMatchPatch instantiate [TextTemplateDiffMatchPatch].
 func NewTextTemplateDiffMatchPatch(d *diffmatchpatch.DiffMatchPatch, tf template.FuncMap) *TextTemplateDiffMatchPatch {
 	return &TextTemplateDiffMatchPatch{
 		differ:    d,

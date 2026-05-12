@@ -66,89 +66,9 @@ func WithFSTmplFuncFactory(tf TmplFuncFactory) FSOption {
 	})
 }
 
-// WithSource is a golden files Source immutable setter.
-func (f *FS) WithSource(src Source) *FS {
-	newF := *f
-
-	newF.src = src
-
-	return &newF
-}
-
-// WithRoot is a root directory immutable setter.
-func (f *FS) WithRoot(dir string) *FS {
-	newF := *f
-
-	newF.root = dir
-
-	return &newF
-}
-
-// WithWriter is a dir and file writers implementations immutable setter.
-func (f *FS) WithWriter(dir DirWriter, file FileWriter) *FS {
-	newF := *f
-
-	newF.writer.Dir = dir
-	newF.writer.File = file
-
-	return &newF
-}
-
-// WithLocator is a golden file location resolver immutable setter.
-func (f *FS) WithLocator(l Locator) *FS {
-	newF := *f
-
-	newF.locator = l
-
-	return &newF
-}
-
-// WithFormatter is a golden file content formatter immutable setter.
-func (f *FS) WithFormatter(fmt Formatter) *FS {
-	newF := *f
-
-	newF.formatter = fmt
-
-	return &newF
-}
-
-// WithDataFilter is a immutable setter for filter of actual data to prevent writes.
-func (f *FS) WithDataFilter(df DataFilter) *FS {
-	newF := *f
-
-	newF.filter = df
-
-	return &newF
-}
-
-// WithForceUpdate is a immutable setter to always overwrite golden file with actual data.
-func (f *FS) WithForceUpdate() *FS {
-	newF := *f
-
-	newF.updallow = func() bool {
-		return true
-	}
-
-	return &newF
-}
-
-// WithTmplFuncFactory is a immutable merger of text/template functions collection factories.
-func (f *FS) WithTmplFuncFactory(tf TmplFuncFactory) *FS {
-	newF := *f
-
-	newF.tmplfuncs = make([]TmplFuncFactory, len(f.tmplfuncs))
-	copy(newF.tmplfuncs, f.tmplfuncs)
-
-	newF.tmplfuncs = append(newF.tmplfuncs, tf)
-
-	return &newF
-}
-
-// WithPreSaveHook is a immutable setter for pre golden file save hook.
-func (f *FS) WithPreSaveHook(h PreSaveHook) *FS {
-	newF := *f
-
-	newF.hooks.preSave = h
-
-	return &newF
+// WithFSDirEntryOverrides is a immutable setter for FS dir entry options override.
+func WithFSDirEntryOverrides(path string, opts ...FSOption) FSOption {
+	return FSOption(func(fs *FS) *FS {
+		return fs.WithDirEntryOverrides(path, opts...)
+	})
 }

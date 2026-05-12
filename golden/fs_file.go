@@ -6,16 +6,33 @@ import (
 	"io"
 	"io/fs"
 	"path/filepath"
-	"reflect"
 )
+
+// handleFile is a handler for [FS.RenderFile].
+func (f *FS) handleFile(t TestingT, actual any) ([]byte, error) {
+	data := f.ensureData(actual)
+	loc := f.getLocation(t)
+
+	expected, err := f.ensureFile(t, loc, data)
+	if err != nil {
+		return nil, fmt.Errorf("ensure %q failure: %w", loc, err)
+	}
+
+	b, err := f.renderTmpl(expected, f.tmplFuncs(t), data)
+	if err != nil {
+		return nil, fmt.Errorf("template render failure: %w", err)
+	}
+
+	return b, nil
+}
 
 // ensureFile reads golden file if it is exists, creates othewise,
 // and overwrites if allowed by UpdateAllower.
-func (f *FS) ensureFile(t TestingT, root, path string, actual Data) ([]byte, error) {
-	file, err := f.src(SourceVars{RenderCallerDir: root}).Open(path)
+func (f *FS) ensureFile(t TestingT, path Location, actual Data) ([]byte, error) {
+	file, err := f.src(SourceVars{RenderCallerDir: f.caller}).Open(path.String())
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return f.writeFile(t, filepath.Join(f.fileWriteDir(root), path), nil, actual)
+			return f.writeFile(t, filepath.Join(f.root, path.Dir, path.File), nil, actual)
 		}
 
 		return nil, fmt.Errorf("source file open failure: %w", err)
@@ -28,7 +45,7 @@ func (f *FS) ensureFile(t TestingT, root, path string, actual Data) ([]byte, err
 	}
 
 	if f.updallow() {
-		return f.writeFile(t, filepath.Join(f.fileWriteDir(root), path), current, actual)
+		return f.writeFile(t, filepath.Join(f.root, path.Dir, path.File), current, actual)
 	}
 
 	return current, nil
@@ -56,17 +73,4 @@ func (f *FS) writeFile(t TestingT, path string, current []byte, actual Data) ([]
 	}
 
 	return buf, nil
-}
-
-func (f *FS) fileWriteDir(root string) string {
-	if f.root != "" {
-		return f.root
-	}
-
-	src := f.src(SourceVars{RenderCallerDir: root})
-	if v := reflect.ValueOf(src); v.Kind() == reflect.String { // NOTE: it is likely os.dirFS
-		return v.String()
-	}
-
-	return root
 }

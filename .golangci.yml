@@ -304,8 +304,8 @@ linters:
       # Required order of `type`, `const`, `var` and `func` declarations inside a file.
       # Default: types before constants before variables before functions.
       dec-order:
-        - type
         - const
+        - type
         - var
         - func
 
@@ -2567,7 +2567,7 @@ linters:
           severity: warning
           disabled: false
           exclude: [""]
-          arguments: [ 7 ]
+          arguments: [ 10 ]
         # https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md#comment-spacings
         - name: comment-spacings
           severity: warning
@@ -4560,7 +4560,10 @@ linters:
         linters:
           - gocyclo
           - gocognit
+          - cyclop
+          - maintidx
           - errcheck
+          - err113
           - dupl
           - gosec
           - nlreturn

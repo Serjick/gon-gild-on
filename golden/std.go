@@ -34,9 +34,20 @@ type tFailer interface {
 	FailNow()
 }
 
-// TestingT is a interface compartible with standart [testing.T].
-type TestingT interface {
+type tTester interface {
 	tNamer
 	tLogger
 	tFailer
+}
+
+// TestingT is a interface compartible with standart [testing.T].
+type TestingT interface {
+	tTester
+
+	// TempDir returns a temporary directory for the test to use.
+	// The directory is automatically removed when the test and
+	// all its subtests complete.
+	// Each subsequent call to t.TempDir returns a unique directory;
+	// if the directory creation fails, TempDir terminates the test by calling Fatal.
+	TempDir() string
 }

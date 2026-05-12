@@ -24,13 +24,26 @@ type (
 )
 
 var (
-	_ Formatter = FnFormatter(nil)
-	_ Formatter = (*JSONFormatter)(nil)
+	_ Formatter   = FnFormatter(nil)
+	_ Formatter   = (*JSONFormatter)(nil)
+	_ DataAdapter = (*JSONFormatter)(nil)
 )
 
 // NewFmtFormatter instantiates [fmt.Sprintln] as [FnFormatter].
 func NewFmtFormatter() FnFormatter {
 	return fmt.Sprintln
+}
+
+// NewStrFormatter instantiates [fmt.Sprintf] with simple string pattern as [FnFormatter].
+func NewStrFormatter() FnFormatter {
+	return NewPatternFormatter("%s")
+}
+
+// NewPatternFormatter instantiates [fmt.Sprintf] with specified pattern as [FnFormatter].
+func NewPatternFormatter(pattern string) FnFormatter {
+	return func(args ...any) string {
+		return fmt.Sprintf(pattern, args...)
+	}
 }
 
 // NewJSONFormatter instantiates [JSONFormatter].
@@ -59,4 +72,9 @@ func (f *JSONFormatter) Bytes(data any) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+// AdaptRaw adapts raw bytes as JSON Data.
+func (*JSONFormatter) AdaptRaw(b []byte) Data { //nolint:ireturn // [DataAdapter] implementation
+	return DataJSON(b)
 }

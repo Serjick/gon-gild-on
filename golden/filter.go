@@ -7,7 +7,7 @@ import (
 // DataFilter is for check whether or not data should be filtered.
 type DataFilter func(any) bool
 
-// NewDataFilterEmpty instantiate DataFilter to check whether or not
+// NewDataFilterEmpty instantiate [DataFilter] to check whether or not
 // data is empty, or equal to zero value, or zero length.
 func NewDataFilterEmpty() DataFilter {
 	return func(data any) bool {
