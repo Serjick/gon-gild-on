@@ -11,6 +11,7 @@ var (
 )
 
 type (
+	// Data is a target representation of arbitrary datum.
 	Data interface {
 		// TmplVars converts data into format compartible with text/template.
 		TmplVars() (any, error)
@@ -20,17 +21,21 @@ type (
 		Valid(DataFilter) bool
 	}
 
+	// DataAny is a generic datum representation.
 	DataAny struct {
 		any
 	}
 
+	// DataJSON is a JSON datum representation.
 	DataJSON json.RawMessage
 )
 
+// TmplVars converts data into format compartible with text/template.
 func (d DataAny) TmplVars() (any, error) {
 	return d.any, nil
 }
 
+// Format render data as text to save into golden file.
 func (d DataAny) Format(f Formatter) ([]byte, error) {
 	b, err := f.Bytes(d.any)
 	if err != nil {
@@ -40,14 +45,17 @@ func (d DataAny) Format(f Formatter) ([]byte, error) {
 	return b, nil
 }
 
+// Valid checks whether or not data should be saved as golden file.
 func (d DataAny) Valid(f DataFilter) bool {
 	return !f(d.any)
 }
 
+// TmplVars converts data into format compartible with text/template.
 func (d DataJSON) TmplVars() (any, error) {
 	return d.decode()
 }
 
+// Format render data as text to save into golden file.
 func (d DataJSON) Format(f Formatter) ([]byte, error) {
 	b, err := f.Bytes(json.RawMessage(d))
 	if err != nil {
@@ -57,6 +65,7 @@ func (d DataJSON) Format(f Formatter) ([]byte, error) {
 	return b, nil
 }
 
+// Valid checks whether or not data should be saved as golden file.
 func (d DataJSON) Valid(f DataFilter) bool {
 	v, err := d.decode()
 

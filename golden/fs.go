@@ -12,8 +12,8 @@ import (
 )
 
 // FS is golden files read and write store wrapper. Any implementation of
-// io/fs.FS could be used as source (e.g. os.DirFS or embed.FS). Writes are
-// performed over host filesystem if Writer option is not used.
+// [io/fs.FS] could be used as source (e.g. [os.DirFS] or [embed.FS]). Writes are
+// performed over host filesystem if [Writer] option is not used.
 type FS struct {
 	src       Source
 	root      string
@@ -53,7 +53,7 @@ func newFSDefault() *FS {
 // RenderFile locate and read golden file, render it as text/template with actual data,
 // and write result back if `-update` flag defined. File will be auto created if doesn't exists.
 // Value of `actual` is the result of operation which being tested, and could be of type
-// golden.Data, json.RawMessage or any other type convertible to text.
+// [golden.Data], [json.RawMessage] or any other type convertible to text.
 func (f *FS) RenderFile(t TestingT, actual any) ([]byte, error) {
 	var caller string
 	if _, c, _, ok := runtime.Caller(1); ok {

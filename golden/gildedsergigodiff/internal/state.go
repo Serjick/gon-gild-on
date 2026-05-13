@@ -7,8 +7,10 @@ import (
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
+// SubstitutionPair is a pair of values to substitute first by second.
 type SubstitutionPair [2]string
 
+// TextTemplateSubstitutionState is a state of substitutions in text template.
 type TextTemplateSubstitutionState struct {
 	differ *diffmatchpatch.DiffMatchPatch
 	subs   []SubstitutionPair
@@ -17,6 +19,7 @@ type TextTemplateSubstitutionState struct {
 	cont   bool
 }
 
+// NewTextTemplateSubstitutionState instantiates [TextTemplateSubstitutionState].
 func NewTextTemplateSubstitutionState(d *diffmatchpatch.DiffMatchPatch) *TextTemplateSubstitutionState {
 	return &TextTemplateSubstitutionState{
 		differ: d,
@@ -27,14 +30,17 @@ func NewTextTemplateSubstitutionState(d *diffmatchpatch.DiffMatchPatch) *TextTem
 	}
 }
 
+// From is a original value getter.
 func (p SubstitutionPair) From() string {
 	return p[0]
 }
 
+// To is a target value getter.
 func (p SubstitutionPair) To() string {
 	return p[1]
 }
 
+// Update is to add [diffmatchpatch.Diff] to state.
 func (s *TextTemplateSubstitutionState) Update(cur diffmatchpatch.Diff, tail ...diffmatchpatch.Diff) int {
 	if !s.cont && s.isActionStart(cur) {
 		s.handleActionStart(cur)
@@ -53,6 +59,11 @@ func (s *TextTemplateSubstitutionState) Update(cur diffmatchpatch.Diff, tail ...
 	}
 
 	return 0
+}
+
+// Subs is a current state all substitutions getter.
+func (s *TextTemplateSubstitutionState) Subs() []SubstitutionPair {
+	return s.subs
 }
 
 func (*TextTemplateSubstitutionState) isActionStart(cur diffmatchpatch.Diff) bool {
@@ -89,16 +100,14 @@ func (s *TextTemplateSubstitutionState) handleActionClose(cur diffmatchpatch.Dif
 	var shift int
 	if len(tail) > 0 && tail[0].Type == diffmatchpatch.DiffInsert {
 		shift++
+
 		s.from += tail[0].Text
 	}
 
 	rest := s.differ.DiffText2(tail[shift:])
+
 	s.subs = append(s.subs, SubstitutionPair{s.from + rest, s.to + rest})
 	s.from, s.to, s.cont = "", "", false
 
 	return shift
-}
-
-func (s *TextTemplateSubstitutionState) Subs() []SubstitutionPair {
-	return s.subs
 }

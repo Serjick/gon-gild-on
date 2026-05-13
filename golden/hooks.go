@@ -5,6 +5,7 @@ import (
 )
 
 type (
+	// PreSaveHookVars is a variables available from presave hooks implementations.
 	PreSaveHookVars struct {
 		// Current is a present content of golden file.
 		Current []byte
@@ -21,12 +22,14 @@ type (
 	}
 )
 
+// NewHooksDefault instatiates default [Hooks].
 func NewHooksDefault() Hooks {
 	return Hooks{
 		preSave: NewPreSaveHookDefault(),
 	}
 }
 
+// NewPreSaveHookDefault instatiates default [PreSaveHook].
 func NewPreSaveHookDefault() PreSaveHook {
 	return func(_ TestingT, b []byte, _ PreSaveHookVars) []byte {
 		return b

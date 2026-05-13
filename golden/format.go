@@ -28,10 +28,12 @@ var (
 	_ Formatter = (*JSONFormatter)(nil)
 )
 
+// NewFmtFormatter instantiates [fmt.Sprintln] as [FnFormatter].
 func NewFmtFormatter() FnFormatter {
 	return fmt.Sprintln
 }
 
+// NewJSONFormatter instantiates [JSONFormatter].
 func NewJSONFormatter() *JSONFormatter {
 	return &JSONFormatter{
 		prefix: "",
@@ -47,6 +49,7 @@ func (f FnFormatter) Bytes(data any) ([]byte, error) {
 // Bytes dump any data as json.
 func (f *JSONFormatter) Bytes(data any) ([]byte, error) {
 	var buf bytes.Buffer
+
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(false)
 	enc.SetIndent(f.prefix, f.indent)

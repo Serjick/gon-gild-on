@@ -20,6 +20,7 @@ type TextTemplateDiffMatchPatch struct {
 
 const diffTimeout = time.Minute
 
+// NewTextTemplateDiffMatchPatch is a instantiator of [TextTemplateDiffMatchPatch].
 func NewTextTemplateDiffMatchPatch(d *diffmatchpatch.DiffMatchPatch, tf template.FuncMap) *TextTemplateDiffMatchPatch {
 	return &TextTemplateDiffMatchPatch{
 		differ:    d,

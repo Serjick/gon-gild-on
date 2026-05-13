@@ -1,7 +1,5 @@
 VERBOSE?=@
-BIN_DIR?=${HOME}/.local/bin
-GOLANGCI_LINT_VERSION?=2.0.2# NOTE: on every version bump don't forget to update ./.golangci.yml with configs from https://github.com/golangci/golangci-lint/blob/v${LINTER_VERSION}/.golangci.reference.yml
-
+TOOLS_DIR?=./tools
 default:
 
 test:
@@ -11,23 +9,17 @@ test:
 coverage: test
 	${VERBOSE} go tool cover --func=coverage.out
 
-lint: golangci-lint
-	${VERBOSE} ${GOLANGCI_LINT} config verify
-	${VERBOSE} ${GOLANGCI_LINT} run --timeout=2m ./... -v
+lint:
+	${VERBOSE} go tool -modfile=${TOOLS_DIR}/go.mod golangci-lint config verify
+	${VERBOSE} go tool -modfile=${TOOLS_DIR}/go.mod golangci-lint run --timeout=2m ./... -v
 
 .PHONY: test coverage lint
 
-golangci-lint:
-ifneq (, $(wildcard ${BIN_DIR}/golangci-lint@${GOLANGCI_LINT_VERSION}/golangci-lint))
-GOLANGCI_LINT=${BIN_DIR}/golangci-lint@${GOLANGCI_LINT_VERSION}/golangci-lint
-else
-ifneq (, $(shell which golangci-lint))
-GOLANGCI_LINT=$(shell which golangci-lint)
-else
-	${VERBOSE} GOBIN=${BIN_DIR}/golangci-lint@${GOLANGCI_LINT_VERSION} go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v${GOLANGCI_LINT_VERSION}
-GOLANGCI_LINT=${BIN_DIR}/golangci-lint@${GOLANGCI_LINT_VERSION}/golangci-lint
-endif
-endif
+go-get-golangci-lint:
+	${VERBOSE} echo "Updating from $$(go list -modfile=${TOOLS_DIR}/go.mod -m -f "{{ .Version }}" github.com/golangci/golangci-lint/v2) ..."
+	${VERBOSE} go get -modfile=${TOOLS_DIR}/go.mod -tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+	${VERBOSE} go list -modfile=${TOOLS_DIR}/go.mod -m -f "{{ .Version }}" github.com/golangci/golangci-lint/v2 >.golangci-lint-version
+	${VERBOSE} echo "... upto $$(cat .golangci-lint-version), don't forget to keep .golangci.yml in sync with https://github.com/golangci/golangci-lint/blob/$$(cat .golangci-lint-version)/.golangci.reference.yml"
 
 guard-%: GUARD
 	@if [ -z '${${*}}' ]; then echo 'Variable $* not set.' && exit 1; fi
