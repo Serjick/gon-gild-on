@@ -15,8 +15,10 @@ type Formatter struct {
 	s *spew.ConfigState
 }
 
+// NewFormatter instantiates [Formatter].
 func NewFormatter() *Formatter {
 	cfg := spew.NewDefaultConfig()
+
 	cfg.DisablePointerAddresses = true
 	cfg.DisableCapacities = true
 	cfg.SortKeys = true

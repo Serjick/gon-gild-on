@@ -14,6 +14,7 @@ import (
 // TmplFuncs is a text/template functions collection.
 type TmplFuncs struct {
 	require.TestingT
+
 	t time.Time
 }
 
@@ -44,6 +45,7 @@ func (f TmplFuncs) TimeInRange(from, to time.Time, s string) string {
 	return s
 }
 
+// FuncMap creates predefined collection of assert functions.
 func (f TmplFuncs) FuncMap() template.FuncMap {
 	return template.FuncMap{
 		"testifyUUID": f.UUID,

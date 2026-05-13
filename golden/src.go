@@ -17,8 +17,8 @@ type (
 	Source func(SourceVars) fs.FS
 )
 
-// NewSourceCwd creates Source which uses directory from
-// which `go test` has been run as a fs.FS root.
+// NewSourceCwd creates [Source] which uses directory from
+// which `go test` has been run as a [fs.FS] root.
 func NewSourceCwd() Source {
 	src := os.DirFS(".")
 
@@ -27,27 +27,28 @@ func NewSourceCwd() Source {
 	}
 }
 
-// NewSourceDir creates Source which uses specified dir as a fs.FS root.
+// NewSourceDir creates [Source] which uses specified dir as a [fs.FS] root.
 func NewSourceDir(dir string) Source {
 	return func(SourceVars) fs.FS {
 		return os.DirFS(dir)
 	}
 }
 
-// NewSourceFS creates Source which utilizes specified fs.FS.
+// NewSourceFS creates [Source] which utilizes specified [fs.FS].
 func NewSourceFS(f fs.FS) Source {
 	return func(SourceVars) fs.FS {
 		return f
 	}
 }
 
-// MustNewSourceRel creates Source which uses directory
-// relative to caller as a fs.FS root.
+// MustNewSourceRel creates [Source] which uses directory
+// relative to caller as a [fs.FS] root.
 func MustNewSourceRel() Source {
 	_, caller, _, ok := runtime.Caller(1)
 	if !ok {
 		panic("no reative dir found")
 	}
+
 	src := os.DirFS(filepath.Dir(caller))
 
 	return func(SourceVars) fs.FS {
@@ -55,8 +56,8 @@ func MustNewSourceRel() Source {
 	}
 }
 
-// NewSourceCaller creates Source which uses
-// `SourceVars.RenderCallerDir` as a fs.FS root.
+// NewSourceCaller creates [Source] which uses
+// [SourceVars.RenderCallerDir] as a [fs.FS] root.
 func NewSourceCaller() Source {
 	return func(v SourceVars) fs.FS {
 		return os.DirFS(v.RenderCallerDir)

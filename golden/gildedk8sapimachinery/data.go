@@ -11,12 +11,13 @@ import (
 
 var _ golden.Data = DataJSONMergePatch{}
 
-// DataJSONMergePatch is implementation of golden.Data based on k8s.io/apimachinery/pkg/util/jsonmergepatch.
+// DataJSONMergePatch is implementation of [golden.Data] based on k8s.io/apimachinery/pkg/util/jsonmergepatch.
 type DataJSONMergePatch struct {
 	before []byte
 	after  []byte
 }
 
+// NewDataJSONMergePatch instantiates [DataJSONMergePatch].
 func NewDataJSONMergePatch(before, after []byte) DataJSONMergePatch {
 	return DataJSONMergePatch{
 		before: before,
@@ -29,7 +30,7 @@ func (d DataJSONMergePatch) TmplVars() (any, error) {
 	return d.diffDecode()
 }
 
-// Format calc diff and pass it into formatter as json.RawMessage.
+// Format calc diff and pass it into formatter as [json.RawMessage].
 func (d DataJSONMergePatch) Format(f golden.Formatter) ([]byte, error) {
 	p, err := d.diff()
 	if err != nil {
@@ -49,6 +50,15 @@ func (d DataJSONMergePatch) Valid(f golden.DataFilter) bool {
 	p, err := d.diffDecode()
 
 	return err == nil && !f(p)
+}
+
+// String represents diff as string.
+func (d DataJSONMergePatch) String() string {
+	if p, err := d.diff(); err == nil {
+		return string(p)
+	}
+
+	return ""
 }
 
 func (d DataJSONMergePatch) diff() ([]byte, error) {
@@ -72,12 +82,4 @@ func (d DataJSONMergePatch) diffDecode() (map[string]any, error) {
 	}
 
 	return v, nil
-}
-
-func (d DataJSONMergePatch) String() string {
-	if p, err := d.diff(); err == nil {
-		return string(p)
-	}
-
-	return ""
 }

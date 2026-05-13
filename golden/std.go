@@ -34,7 +34,7 @@ type tFailer interface {
 	FailNow()
 }
 
-// TestingT is a interface compartible with standart *testing.T.
+// TestingT is a interface compartible with standart [testing.T].
 type TestingT interface {
 	tNamer
 	tLogger
