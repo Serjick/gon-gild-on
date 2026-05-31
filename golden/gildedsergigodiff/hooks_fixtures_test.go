@@ -1,61 +1,27 @@
 package gildedsergigodiff_test
 
 const FieldLodgePrev = `{
-    "key1": {
-        "a": "{{ .Actual.item1.key }}",
-        "b": {},
-        "z": true
-    },
     "key2": {
         "a": "{{ .Actual.item2.key }}",
-        "b": {},
-        "z": true
-    },
-    "key3": {
-        "a": "{{ .Actual.item3.key }}",
-        "b": {},
+        "c": {},
         "z": true
     }
 }`
 
 const FieldLodgeNext = `{
-    "key1": {
-        "a": "key1",
-        "b": {},
-        "c: 1,
-        "z": true
-    },
     "key2": {
         "a": "key2",
-        "b": {},
-        "c: 2,
-        "z": true
-    },
-    "key3": {
-        "a": "key3",
-        "b": {},
-        "c: 3,
+        "b": 2,
+        "c": {},
         "z": true
     }
 }`
 
 const FieldLodgeWant = `{
-    "key1": {
-        "a": "{{ .Actual.item1.key }}",
-        "b": {},
-        "c: 1,
-        "z": true
-    },
     "key2": {
         "a": "{{ .Actual.item2.key }}",
-        "b": {},
-        "c: 2,
-        "z": true
-    },
-    "key3": {
-        "a": "{{ .Actual.item3.key }}",
-        "b": {},
-        "c: 3,
+        "b": 2,
+        "c": {},
         "z": true
     }
 }`

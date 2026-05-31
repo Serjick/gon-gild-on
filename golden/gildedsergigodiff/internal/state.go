@@ -41,13 +41,15 @@ func (p SubstitutionPair) To() string {
 }
 
 // Update is to add [diffmatchpatch.Diff] to state.
-func (s *TextTemplateSubstitutionState) Update(cur diffmatchpatch.Diff, tail ...diffmatchpatch.Diff) int {
+func (s *TextTemplateSubstitutionState) Update(
+	cur diffmatchpatch.Diff, tail ...diffmatchpatch.Diff,
+) []diffmatchpatch.Diff {
 	if !s.cont && s.isActionStart(cur) {
 		s.handleActionStart(cur)
 	}
 
 	if !s.cont {
-		return 0
+		return nil
 	}
 
 	if s.isActionClose(cur) {
@@ -58,7 +60,7 @@ func (s *TextTemplateSubstitutionState) Update(cur diffmatchpatch.Diff, tail ...
 		s.handleActionContinue(cur)
 	}
 
-	return 0
+	return nil
 }
 
 // Subs is a current state all substitutions getter.
@@ -92,22 +94,24 @@ func (s *TextTemplateSubstitutionState) handleActionContinue(cur diffmatchpatch.
 	}
 }
 
-func (s *TextTemplateSubstitutionState) handleActionClose(cur diffmatchpatch.Diff, tail ...diffmatchpatch.Diff) int {
+func (s *TextTemplateSubstitutionState) handleActionClose(
+	cur diffmatchpatch.Diff, tail ...diffmatchpatch.Diff,
+) []diffmatchpatch.Diff {
 	if !s.isActionStart(cur) {
 		s.to += cur.Text
 	}
 
-	var shift int
-	if len(tail) > 0 && tail[0].Type == diffmatchpatch.DiffInsert {
-		shift++
+	rest := tail
+	for len(rest) > 0 && rest[0].Type == diffmatchpatch.DiffInsert {
+		s.from += rest[0].Text
 
-		s.from += tail[0].Text
+		rest = rest[1:]
 	}
 
-	rest := s.differ.DiffText2(tail[shift:])
+	suffix := s.differ.DiffText2(rest)
 
-	s.subs = append(s.subs, SubstitutionPair{s.from + rest, s.to + rest})
+	s.subs = append(s.subs, SubstitutionPair{s.from + suffix, s.to + suffix})
 	s.from, s.to, s.cont = "", "", false
 
-	return shift
+	return rest
 }

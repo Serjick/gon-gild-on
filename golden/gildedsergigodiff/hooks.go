@@ -45,12 +45,25 @@ func (p *TextTemplateDiffMatchPatch) Patch(prev, next string) (string, error) {
 func (p *TextTemplateDiffMatchPatch) calcSubstitions(prev, next string) []internal.SubstitutionPair {
 	state := internal.NewTextTemplateSubstitutionState(p.differ)
 
-	diff := p.differ.DiffBisect(prev, next, time.Now().Add(diffTimeout))
-	for i := 0; i < len(diff)-1; i++ {
-		i += state.Update(diff[i], diff[i+1:]...)
+	diff := p.doDiff(prev, next)
+	for len(diff) > 0 {
+		cur := diff[0]
+
+		diff = diff[1:]
+		if d := state.Update(cur, p.doDiff(p.differ.DiffText1(diff), p.differ.DiffText2(diff))...); d != nil {
+			diff = d
+		}
 	}
 
 	return state.Subs()
+}
+
+func (p *TextTemplateDiffMatchPatch) doDiff(left, right string) []diffmatchpatch.Diff {
+	if left == "" && right == "" {
+		return nil
+	}
+
+	return p.differ.DiffCleanupEfficiency(p.differ.DiffBisect(left, right, time.Now().Add(diffTimeout)))
 }
 
 // NewTextTemplateDiffMatchPatchPreSaveHook is a pre save hook to transfer
