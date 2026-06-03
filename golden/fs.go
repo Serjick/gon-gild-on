@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
@@ -17,6 +18,7 @@ import (
 type FS struct {
 	src       Source
 	root      string
+	caller    string
 	writer    Writer
 	locator   Locator
 	formatter Formatter
@@ -24,22 +26,19 @@ type FS struct {
 	updallow  UpdateAllower
 	tmplfuncs []TmplFuncFactory
 	hooks     Hooks
+	overrides map[string][]FSOption
 }
 
-// NewFS instantiate FS.
+// NewFS instantiate [FS].
 func NewFS(opts ...FSOption) *FS {
-	newF := newFSDefault()
-	for i := range opts {
-		newF = opts[i](newF)
-	}
-
-	return newF
+	return newFSDefault().WithOptions(opts...)
 }
 
 func newFSDefault() *FS {
 	return &FS{
 		src:       NewSourceCaller(),
 		root:      "",
+		caller:    "",
 		writer:    Writer{Dir: os.MkdirAll, File: os.WriteFile},
 		locator:   NewLocatorDefault(),
 		formatter: NewJSONFormatter(),
@@ -47,6 +46,7 @@ func newFSDefault() *FS {
 		updallow:  NewUpdateAllowerByFlag(),
 		tmplfuncs: nil,
 		hooks:     NewHooksDefault(),
+		overrides: make(map[string][]FSOption),
 	}
 }
 
@@ -60,20 +60,31 @@ func (f *FS) RenderFile(t TestingT, actual any) ([]byte, error) {
 		caller = filepath.Dir(c)
 	}
 
-	data := f.ensureData(actual)
-	file := f.locator(LocationVars{TestName: t.Name()})
+	return f.withRootEnsure(caller).handleFile(t, actual)
+}
 
-	expected, err := f.ensureFile(t, caller, file, data)
-	if err != nil {
-		return nil, fmt.Errorf("ensure %q failure: %w", file, err)
+// RenderDir handle same as [FS.RenderFile] every [fs.FS] entry.
+// Note that filename from [Locator] is always ignored.
+// Symlinks are handled as regular directories/files, and
+// like so they are will be saved as golden.
+func (f *FS) RenderDir(t TestingT, actual fs.FS) (fs.FS, error) {
+	var caller string
+	if _, c, _, ok := runtime.Caller(1); ok {
+		caller = filepath.Dir(c)
 	}
 
-	b, err := f.renderTmpl(expected, f.tmplFuncs(t), data)
+	rootedF := f.withRootEnsure(caller)
+
+	dirFS, visited, err := rootedF.handleDir(t, actual)
 	if err != nil {
-		return nil, fmt.Errorf("template render failure: %w", err)
+		return nil, err
 	}
 
-	return b, nil
+	if err := rootedF.gcRedundantFiles(t, visited); err != nil {
+		return nil, fmt.Errorf("gc redundant files failure: %w", err)
+	}
+
+	return dirFS, nil
 }
 
 func (*FS) renderTmpl(tmpl []byte, funcs template.FuncMap, actual Data) ([]byte, error) {
@@ -95,15 +106,34 @@ func (*FS) renderTmpl(tmpl []byte, funcs template.FuncMap, actual Data) ([]byte,
 	return b.Bytes(), nil
 }
 
-func (*FS) ensureData(actual any) Data { //nolint:ireturn // arbitrary implementations could be returned
-	switch t := actual.(type) {
-	case Data:
-		return t
-	case json.RawMessage:
-		return DataJSON(t)
-	default:
-		return DataAny{any: t}
+func (f *FS) getLocation(t tNamer) Location {
+	l := f.locator(LocationVars{TestName: t.Name()})
+
+	if l, ok := l.(Location); ok {
+		return l
 	}
+
+	dir, file := filepath.Split(l.String())
+
+	return Location{
+		Dir:  filepath.Clean(dir),
+		File: file,
+	}
+}
+
+func (f *FS) ensureData(actual any) Data { //nolint:ireturn // arbitrary implementations could be returned
+	switch cast := actual.(type) {
+	case Data:
+		return cast
+	case json.RawMessage:
+		return DataJSON(cast)
+	case []byte:
+		if c, ok := f.formatter.(DataAdapter); ok {
+			return c.AdaptRaw(cast)
+		}
+	}
+
+	return DataAny{any: actual}
 }
 
 func (f *FS) tmplFuncs(t TestingT) template.FuncMap {

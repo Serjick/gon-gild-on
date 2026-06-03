@@ -4,6 +4,13 @@ import (
 	"os"
 )
 
+const (
+	// DefaultDirPerm is a default permissions for [DirWriter].
+	DefaultDirPerm os.FileMode = os.ModeDir | 0o755
+	// DefaultFilePerm is a default permissions for [FileWriter].
+	DefaultFilePerm os.FileMode = 0o644
+)
+
 type (
 	// DirWriter is a creator of directories.
 	DirWriter func(string, os.FileMode) error
@@ -14,11 +21,4 @@ type (
 		Dir  DirWriter
 		File FileWriter
 	}
-)
-
-const (
-	// DefaultDirPerm is a default permissions for [DirWriter].
-	DefaultDirPerm os.FileMode = os.ModeDir | 0o755
-	// DefaultFilePerm is a default permissions for [FileWriter].
-	DefaultFilePerm os.FileMode = 0o644
 )

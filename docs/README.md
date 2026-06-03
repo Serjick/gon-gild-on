@@ -87,7 +87,7 @@ func TestExample(t *testing.T) {
 
 ## Updating Golden Files
 
-Run your tests with the `-update` flag to automatically update golden files:
+Run your tests with the one of flags `-gon-gild-on.update` or `-update` defined to automatically update golden files:
 
 ```sh
 go test -update ./...
@@ -128,6 +128,21 @@ fs := golden.NewFS(golden.WithFSFormatter(formatter))
 locator := golden.NewLocatorSubDir("api")
 fs := golden.NewFS(golden.WithFSLocator(locator))
 ```
+
+### Directory Content Support
+
+```go
+want, err := golden.NewFS(
+	// Define options for all directory files
+	golden.WithFSFormatter(golden.NewStrFormatter()),
+	golden.WithFSDirEntryOverrides(
+		// Use path specific options override
+		filepath.Join("subdir", "file.json"), golden.WithFSFormatter(golden.NewJSONFormatter()),
+	),
+).RenderDir(t, got)
+```
+
+And then there is possible to assert by content equality of `got` and `want` directories with your favourite tool.
 
 ### Working with JSON
 
